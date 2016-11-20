@@ -36,7 +36,7 @@ def load_vctk_audio(directory, sample_rate):
         audio = audio.reshape(-1, 1)
         matches = speaker_re.findall(filename)[0]
         speaker_id, recording_id = [int(id_) for id_ in matches]
-        yield audio, speaker_id
+        yield audio, speaker_id, filename
 
 
 def trim_silence(audio, threshold):
@@ -71,6 +71,10 @@ class AudioReader(object):
                                          ['float32'],
                                          shapes=[(None, 1)])
         self.enqueue = self.queue.enqueue([self.sample_placeholder])
+        # Create queue for holding speaker_id
+        self.speaker_id_placeholder = tf.placeholder(dtype=tf.float32, shape=None)
+        self.speaker_id_queue = tf.PaddingFIFOQueue(queue_size, ['float32'], shapes=[(None, 1)])
+        self.speaker_id_enqueue = self.speaker_id_queue.enqueue([self.speaker_id_placeholder])
 
         # TODO Find a better way to check this.
         # Checking inside the AudioReader's thread makes it hard to terminate
@@ -82,13 +86,19 @@ class AudioReader(object):
         output = self.queue.dequeue_many(num_elements)
         return output
 
+    # Get speaker_id from speaker_id_queue
+    def speaker_id_dequeue(self, num_elements):
+        output = self.speaker_id_queue.dequeue_many(num_elements)
+        return output
+
     def thread_main(self, sess):
         buffer_ = np.array([])
         stop = False
         # Go through the dataset multiple times
         while not stop:
-            iterator = load_generic_audio(self.audio_dir, self.sample_rate)
-            for audio, filename in iterator:
+            # Get tuples of (audio, speaker_id, filename)
+            iterator = load_vctk_audio(self.audio_dir, self.sample_rate)
+            for audio, speaker_id, filename in iterator:
                 if self.coord.should_stop():
                     stop = True
                     break
@@ -109,10 +119,14 @@ class AudioReader(object):
                         piece = np.reshape(buffer_[:self.sample_size], [-1, 1])
                         sess.run(self.enqueue,
                                  feed_dict={self.sample_placeholder: piece})
+                        # For each piece of audio, enqueue the speaker_id
+                        sess.run(self.speaker_id_enqueue, feed_dict={self.speaker_id_placeholder: speaker_id})
                         buffer_ = buffer_[self.sample_size:]
                 else:
                     sess.run(self.enqueue,
                              feed_dict={self.sample_placeholder: audio})
+                    # For the audio, enqueu the speaker_id
+                    sess.run(self.speaker_id_enqueue, feed_dict={self.speaker_id_placeholder: speaker_id})
 
     def start_threads(self, sess, n_threads=1):
         for _ in range(n_threads):
