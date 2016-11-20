@@ -27,6 +27,7 @@ class WaveNetModel(object):
         residual_channels = 16  # Not specified in the paper.
         dilation_channels = 32  # Not specified in the paper.
         skip_channels = 16      # Not specified in the paper.
+        speaker_id_channels = 32# Not specified in the paper.
         net = WaveNetModel(batch_size, dilations, filter_width,
                            residual_channels, dilation_channels,
                            skip_channels)
@@ -44,7 +45,8 @@ class WaveNetModel(object):
                  use_biases=False,
                  scalar_input=False,
                  initial_filter_width=32,
-                 histograms=False):
+                 histograms=False,
+                 speaker_id_channels=32):
         '''Initializes the WaveNet model.
 
         Args:
@@ -71,6 +73,7 @@ class WaveNetModel(object):
                 if scalar_input=True.
             histograms: Whether to store histograms in the summary.
                 Default: False.
+            speaker_id_channels: How many filters to learn for the speaker_id.
         '''
         self.batch_size = batch_size
         self.dilations = dilations
@@ -83,6 +86,7 @@ class WaveNetModel(object):
         self.scalar_input = scalar_input
         self.initial_filter_width = initial_filter_width
         self.histograms = histograms
+        self.speaker_id_channels = speaker_id_channels
 
         self.variables = self._create_variables()
 
@@ -109,6 +113,14 @@ class WaveNetModel(object):
                      self.residual_channels])
                 var['causal_layer'] = layer
 
+            with tf.variable_scope('speaker_id_layer'):
+                layer = dict()
+                layer['speaker_id_filter'] = create_variable(
+                    'speaker_id_filter',
+                    [400, # The greatest speaker id is 376
+                    self.speaker_id_channels])
+                var['speaker_id_layer'] = layer
+
             var['dilated_stack'] = list()
             with tf.variable_scope('dilated_stack'):
                 for i, dilation in enumerate(self.dilations):
@@ -119,10 +131,20 @@ class WaveNetModel(object):
                             [self.filter_width,
                              self.residual_channels,
                              self.dilation_channels])
+                        current['speaker_id_filter'] = create_variable(
+                            'speaker_id_filter',
+                            [1,
+                             self.speaker_id_channels,
+                             self.dilation_channels])
                         current['gate'] = create_variable(
                             'gate',
                             [self.filter_width,
                              self.residual_channels,
+                             self.dilation_channels])
+                        current['speaker_id_gate'] = create_variable(
+                            'speaker_id_gate',
+                            [1,
+                             self.speaker_id_channels,
                              self.dilation_channels])
                         current['dense'] = create_variable(
                             'dense',
