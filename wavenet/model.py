@@ -461,10 +461,10 @@ class WaveNetModel(object):
         return encoded
 
     def _encode_speaker_id(self, speaker_id_batch):
-        #encoded_speaker_id = None
-        #weights_filter = self.variables['speaker_id_causal_layer']['speaker_id_filter']
-        #encoded_speaker_id = tf.nn.embedding_lookup(weights_filter, speaker_id_batch)
-        encoded_speaker_id = tf.reshape(speaker_id_batch, [self.batch_size, 1, self.speaker_id_channels])
+        encoded_speaker_id = None
+        weights_filter = self.variables['speaker_id_causal_layer']['speaker_id_filter']
+        encoded_speaker_id = tf.nn.embedding_lookup(weights_filter, speaker_id_batch)
+        encoded_speaker_id = tf.reshape(encoded_speaker_id, [self.batch_size, 1, self.speaker_id_channels])
 
         return encoded_speaker_id
 
