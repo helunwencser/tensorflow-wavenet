@@ -215,6 +215,7 @@ def main():
             sample_size=args.sample_size,
             silence_threshold=args.silence_threshold)
         audio_batch = reader.dequeue(args.batch_size)
+        speaker_id_batch = reader.speaker_id_dequeue(args.batch_size)
 
     # Create network.
     net = WaveNetModel(
@@ -232,7 +233,7 @@ def main():
         speaker_id_channels=wavenet_params['speaker_id_channels'])
     if args.l2_regularization_strength == 0:
         args.l2_regularization_strength = None
-    loss = net.loss(audio_batch, args.l2_regularization_strength)
+    loss = net.loss(audio_batch, speaker_id_batch, args.l2_regularization_strength)
     optimizer = optimizer_factory[args.optimizer](
                     learning_rate=args.learning_rate,
                     momentum=args.momentum)
