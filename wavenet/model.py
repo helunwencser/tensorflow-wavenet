@@ -459,6 +459,20 @@ class WaveNetModel(object):
             encoded = tf.reshape(encoded, shape)
         return encoded
 
+    def _one_hot_speaker_id(self, speaker_id_batch):
+        '''
+        One-hot encodes the speaker id.
+        '''
+        with tf.name_scope('one_hot_encode'):
+            encoded = tf.one_hot(
+                speaker_id_batch,
+                depth=400,
+                dtype=tf.float32
+                )
+            shape = [self.batch_size, -1, self.speaker_id_channels]
+            encoded = tf.reshape(encoded, shape)
+            return encoded
+
     def predict_proba(self, waveform, name='wavenet'):
         '''Computes the probability distribution of the next sample based on
         all samples in the input waveform.
@@ -507,6 +521,7 @@ class WaveNetModel(object):
 
     def loss(self,
              input_batch,
+             speaker_id_batch,
              l2_regularization_strength=None,
              name='wavenet'):
         '''Creates a WaveNet network and returns the autoencoding loss.
@@ -519,6 +534,8 @@ class WaveNetModel(object):
                                         self.quantization_channels)
 
             encoded = self._one_hot(input_batch)
+            encoded_speaker_id = self._one_hot_speaker_id(speaker_id_batch)
+
             if self.scalar_input:
                 network_input = tf.reshape(
                     tf.cast(input_batch, tf.float32),
@@ -526,7 +543,7 @@ class WaveNetModel(object):
             else:
                 network_input = encoded
 
-            raw_output = self._create_network(network_input)
+            raw_output = self._create_network(network_input, encoded_speaker_id)
 
             with tf.name_scope('loss'):
                 # Shift original input left by one sample, which means that
