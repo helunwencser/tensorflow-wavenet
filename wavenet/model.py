@@ -467,13 +467,13 @@ class WaveNetModel(object):
             encoded = tf.one_hot(
                 speaker_id_batch,
                 depth=400,
-                dtype=tf.float32
+                dtype=tf.int32
                 )
             shape = [self.batch_size, -1, self.speaker_id_channels]
             encoded = tf.reshape(encoded, shape)
             return encoded
 
-    def predict_proba(self, waveform, name='wavenet'):
+    def predict_proba(self, waveform, speaker_id, name='wavenet'):
         '''Computes the probability distribution of the next sample based on
         all samples in the input waveform.
         If you want to generate audio by feeding the output of the network back
@@ -484,7 +484,8 @@ class WaveNetModel(object):
                 encoded = tf.reshape(encoded, [-1, 1])
             else:
                 encoded = self._one_hot(waveform)
-            raw_output = self._create_network(encoded)
+            encoded_speaker_id = self._one_hot_speaker_id(speaker_id)
+            raw_output = self._create_network(encoded, encoded_speaker_id)
             out = tf.reshape(raw_output, [-1, self.quantization_channels])
             # Cast to float64 to avoid bug in TensorFlow
             proba = tf.cast(

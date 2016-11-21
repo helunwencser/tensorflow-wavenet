@@ -85,6 +85,12 @@ def get_arguments():
         type=str,
         default=None,
         help='The wav file to start generation from')
+    parser.add_argument(
+        '--speaker_id',
+        type=int,
+        default=225，
+        help='The speaker id to start generation from'
+        )
     return parser.parse_args()
 
 
@@ -129,14 +135,15 @@ def main():
         skip_channels=wavenet_params['skip_channels'],
         use_biases=wavenet_params['use_biases'],
         scalar_input=wavenet_params['scalar_input'],
-        initial_filter_width=wavenet_params['initial_filter_width'])
+        initial_filter_width=wavenet_params['initial_filter_width'],
+        speaker_id_channels=wavenet_params['speaker_id_channels'])
 
     samples = tf.placeholder(tf.int32)
 
     if args.fast_generation:
         next_sample = net.predict_proba_incremental(samples)
     else:
-        next_sample = net.predict_proba(samples)
+        next_sample = net.predict_proba(samples, args.speaker_id)
 
     if args.fast_generation:
         sess.run(tf.initialize_all_variables())
