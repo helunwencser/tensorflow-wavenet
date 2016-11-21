@@ -460,19 +460,14 @@ class WaveNetModel(object):
             encoded = tf.reshape(encoded, shape)
         return encoded
 
-    def _one_hot_speaker_id(self, speaker_id_batch):
-        '''
-        One-hot encodes the speaker id.
-        '''
-        with tf.name_scope('one_hot_encode'):
-            encoded = tf.one_hot(
-                speaker_id_batch,
-                depth=400,
-                dtype=tf.int32
-                )
-            shape = [self.batch_size, -1, self.speaker_id_channels]
-            encoded = tf.reshape(encoded, shape)
-            return encoded
+    def _encode_speaker_id(self, speaker_id_batch):
+        encoded_speaker_id = None
+        weights_filter = self.variables['speaker_id_causal_layer']['speaker_id_filter']
+        encoded_speaker_id = tf.nn.embedding_lookup(weights_filter, speaker_id_batch)
+        encoded_speaker_id = tf.reshape(encoded_speaker_id, [self.batch_size, 1, self.speaker_id_channels])
+
+        return encoded_speaker_id
+
 
     def predict_proba(self, waveform, speaker_id, name='wavenet'):
         '''Computes the probability distribution of the next sample based on
@@ -485,7 +480,7 @@ class WaveNetModel(object):
                 encoded = tf.reshape(encoded, [-1, 1])
             else:
                 encoded = self._one_hot(waveform)
-            encoded_speaker_id = self._one_hot_speaker_id(speaker_id)
+            encoded_speaker_id = self._encode_speaker_id(speaker_id)
             raw_output = self._create_network(encoded, encoded_speaker_id)
             out = tf.reshape(raw_output, [-1, self.quantization_channels])
             # Cast to float64 to avoid bug in TensorFlow
@@ -536,7 +531,7 @@ class WaveNetModel(object):
                                         self.quantization_channels)
 
             encoded = self._one_hot(input_batch)
-            encoded_speaker_id = self._one_hot_speaker_id(speaker_id_batch)
+            encoded_speaker_id = self._encode_speaker_id(speaker_id_batch)
 
             if self.scalar_input:
                 network_input = tf.reshape(
