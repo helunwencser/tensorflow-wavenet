@@ -214,8 +214,7 @@ def main():
             sample_rate=wavenet_params['sample_rate'],
             sample_size=args.sample_size,
             silence_threshold=args.silence_threshold)
-        audio_batch = reader.dequeue(args.batch_size)
-        speaker_id_batch = reader.speaker_id_dequeue(args.batch_size)
+        audio_batch, speaker_id_batch = reader.dequeue(args.batch_size)
 
     # Create network.
     net = WaveNetModel(
