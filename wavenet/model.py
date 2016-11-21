@@ -209,7 +209,7 @@ class WaveNetModel(object):
             weights_filter = self.variables['speaker_id_causal_layer']['speaker_id_filter']
             return causal_conv(speaker_id_batch, weights_filter, 1)
 
-    def _create_dilation_layer(self, input_batch, layer_index, dilation):
+    def _create_dilation_layer(self, input_batch, layer_index, dilation, speaker_id_batch):
         '''Creates a single causal dilated convolution layer.
 
         The layer contains a gated filter that connects to dense output
@@ -228,9 +228,13 @@ class WaveNetModel(object):
 
         weights_filter = variables['filter']
         weights_gate = variables['gate']
+        speaker_id_weights_filter = variables['speaker_id_filter']
+        speaker_id_weights_gate = variables['speaker_id_gate']
 
         conv_filter = causal_conv(input_batch, weights_filter, dilation)
         conv_gate = causal_conv(input_batch, weights_gate, dilation)
+        speaker_id_conv_filter = causal_conv(speaker_id_batch, speaker_id_weights_filter, dilation)
+        speaker_id_conv_gate = causal_conv(speaker_id_batch, speaker_id_weights_gate, dilation)
 
         if self.use_biases:
             filter_bias = variables['filter_bias']
@@ -238,7 +242,7 @@ class WaveNetModel(object):
             conv_filter = tf.add(conv_filter, filter_bias)
             conv_gate = tf.add(conv_gate, gate_bias)
 
-        out = tf.tanh(conv_filter) * tf.sigmoid(conv_gate)
+        out = tf.tanh(conv_filter + speaker_id_conv_filter) * tf.sigmoid(conv_gate + speaker_id_conv_gate)
 
         # The 1x1 conv to produce the residual output
         weights_dense = variables['dense']
@@ -260,6 +264,8 @@ class WaveNetModel(object):
             layer = 'layer{}'.format(layer_index)
             tf.histogram_summary(layer + '_filter', weights_filter)
             tf.histogram_summary(layer + '_gate', weights_gate)
+            tf.histogram_summary(layer + '_speaker_id_filter', speaker_id_weights_filter)
+            tf.histogram_summary(layer + '_speaker_id_gate', speaker_id_weights_gate)
             tf.histogram_summary(layer + '_dense', weights_dense)
             tf.histogram_summary(layer + '_skip', weights_skip)
             if self.use_biases:
