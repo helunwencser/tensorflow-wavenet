@@ -207,7 +207,7 @@ class WaveNetModel(object):
         '''
         with tf.name_scope('speaker_id_causal_layer'):
             weights_filter = self.variables['speaker_id_causal_layer']['speaker_id_filter']
-            return causal_conv(speaker_id_batch, weights_filter, 1)
+            return speaker_id_causal_conv(speaker_id_batch, weights_filter)
 
     def _create_dilation_layer(self, input_batch, layer_index, dilation, speaker_id_batch):
         '''Creates a single causal dilated convolution layer.
