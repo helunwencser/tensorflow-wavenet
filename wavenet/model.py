@@ -1,6 +1,6 @@
 import tensorflow as tf
 
-from .ops import causal_conv, mu_law_encode
+from .ops import causal_conv, mu_law_encode, speaker_id_causal_conv
 
 
 def create_variable(name, shape):
@@ -233,8 +233,8 @@ class WaveNetModel(object):
 
         conv_filter = causal_conv(input_batch, weights_filter, dilation)
         conv_gate = causal_conv(input_batch, weights_gate, dilation)
-        speaker_id_conv_filter = causal_conv(speaker_id_batch, speaker_id_weights_filter, dilation)
-        speaker_id_conv_gate = causal_conv(speaker_id_batch, speaker_id_weights_gate, dilation)
+        speaker_id_conv_filter = speaker_id_causal_conv(speaker_id_batch, speaker_id_weights_filter)
+        speaker_id_conv_gate = speaker_id_causal_conv(speaker_id_batch, speaker_id_weights_gate)
 
         if self.use_biases:
             filter_bias = variables['filter_bias']

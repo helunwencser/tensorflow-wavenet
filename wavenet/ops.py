@@ -61,6 +61,11 @@ def causal_conv(value, filter_, dilation, name='causal_conv'):
                           [-1, tf.shape(value)[1], -1])
         return result
 
+def speaker_id_causal_conv(value, filter_, name='speaker_id_conv'):
+    with tf.name_scope(name):
+        result = tf.nn.conv1d(value, filter_, stride=1, padding='SAME')
+        return result
+
 
 def mu_law_encode(audio, quantization_channels):
     '''Quantizes waveform amplitudes.'''

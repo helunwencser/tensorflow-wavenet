@@ -83,13 +83,9 @@ class AudioReader(object):
             raise ValueError("No audio files found in '{}'.".format(audio_dir))
 
     def dequeue(self, num_elements):
-        output = self.queue.dequeue_many(num_elements)
-        return output
-
-    # Get speaker_id from speaker_id_queue
-    def speaker_id_dequeue(self, num_elements):
-        output = self.speaker_id_queue.dequeue_many(num_elements)
-        return output
+        audio_output = self.queue.dequeue_many(num_elements)
+        speaker_id_output = self.speaker_id_queue.dequeue_many(num_elements)
+        return audio_output, speaker_id_output
 
     def thread_main(self, sess):
         buffer_ = np.array([])
