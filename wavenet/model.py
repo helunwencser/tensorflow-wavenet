@@ -113,13 +113,13 @@ class WaveNetModel(object):
                      self.residual_channels])
                 var['causal_layer'] = layer
 
-            with tf.variable_scope('speaker_id_layer'):
+            with tf.variable_scope('speaker_id_causal_layer'):
                 layer = dict()
                 layer['speaker_id_filter'] = create_variable(
                     'speaker_id_filter',
                     [400, # The greatest speaker id is 376
                     self.speaker_id_channels])
-                var['speaker_id_layer'] = layer
+                var['speaker_id_causal_layer'] = layer
 
             var['dilated_stack'] = list()
             with tf.variable_scope('dilated_stack'):
@@ -199,6 +199,15 @@ class WaveNetModel(object):
         with tf.name_scope('causal_layer'):
             weights_filter = self.variables['causal_layer']['filter']
             return causal_conv(input_batch, weights_filter, 1)
+
+    def _create_speaker_id_causal_layer(self, speaker_id_batch):
+        '''Creates a single causal convolution layer.
+
+        The layer can change the number of channels.
+        '''
+        with tf.name_scope('speaker_id_causal_layer'):
+            weights_filter = self.variables['speaker_id_causal_layer']['speaker_id_filter']
+            return causal_conv(speaker_id_batch, weights_filter, 1)
 
     def _create_dilation_layer(self, input_batch, layer_index, dilation):
         '''Creates a single causal dilated convolution layer.
