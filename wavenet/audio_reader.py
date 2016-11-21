@@ -72,8 +72,8 @@ class AudioReader(object):
                                          shapes=[(None, 1)])
         self.enqueue = self.queue.enqueue([self.sample_placeholder])
         # Create queue for holding speaker_id
-        self.speaker_id_placeholder = tf.placeholder(dtype=tf.float32, shape=None)
-        self.speaker_id_queue = tf.PaddingFIFOQueue(queue_size, ['float32'], shapes=[(None, 1)])
+        self.speaker_id_placeholder = tf.placeholder(dtype=tf.int32, shape=None)
+        self.speaker_id_queue = tf.PaddingFIFOQueue(queue_size, ['int32'], shapes=[(None, 1)])
         self.speaker_id_enqueue = self.speaker_id_queue.enqueue([self.speaker_id_placeholder])
 
         # TODO Find a better way to check this.
