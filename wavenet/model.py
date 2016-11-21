@@ -321,7 +321,7 @@ class WaveNetModel(object):
 
         return skip_contribution, input_batch + transformed
 
-    def _create_network(self, input_batch):
+    def _create_network(self, input_batch, speaker_id_batch):
         '''Construct the WaveNet network.'''
         outputs = []
         current_layer = input_batch
@@ -333,13 +333,14 @@ class WaveNetModel(object):
             initial_channels = self.quantization_channels
 
         current_layer = self._create_causal_layer(current_layer)
+        current_speaker_id_layer = self._create_speaker_id_causal_layer(speaker_id_batch)
 
         # Add all defined dilation layers.
         with tf.name_scope('dilated_stack'):
             for layer_index, dilation in enumerate(self.dilations):
                 with tf.name_scope('layer{}'.format(layer_index)):
                     output, current_layer = self._create_dilation_layer(
-                        current_layer, layer_index, dilation)
+                        current_layer, layer_index, dilation, current_speaker_id_layer)
                     outputs.append(output)
 
         with tf.name_scope('postprocessing'):
