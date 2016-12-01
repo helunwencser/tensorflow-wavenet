@@ -16,6 +16,10 @@ def find_files(directory, pattern='*.wav'):
             files.append(os.path.join(root, filename))
     return files
 
+def randomize_files(files):
+    for file in files:
+        file_index = random.randint(0, (len(files) - 1))
+        yield files[file_index]
 
 def load_generic_audio(directory, sample_rate):
     '''Generator that yields audio waveforms from the directory.'''
@@ -29,7 +33,7 @@ def load_generic_audio(directory, sample_rate):
 def load_vctk_audio(directory, sample_rate):
     '''Generator that yields audio waveforms from the VCTK dataset, and
     additionally the ID of the corresponding speaker.'''
-    files = find_files(directory)
+    files = randomize_files(find_files(directory))
     speaker_re = re.compile(r'p([0-9]+)_([0-9]+)\.wav')
     for filename in files:
         audio, _ = librosa.load(filename, sr=sample_rate, mono=True)
